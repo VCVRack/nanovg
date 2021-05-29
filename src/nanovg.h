@@ -271,6 +271,7 @@ void nvgLineJoin(NVGcontext* ctx, int join);
 // Sets the transparency applied to all rendered shapes.
 // Already transparent paths will get proportionally more transparent as well.
 void nvgGlobalAlpha(NVGcontext* ctx, float alpha);
+void nvgGlobalTint(NVGcontext* ctx, NVGcolor tint);
 
 //
 // Transforms

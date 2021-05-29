@@ -74,7 +74,7 @@ struct NVGstate {
 	float miterLimit;
 	int lineJoin;
 	int lineCap;
-	float alpha;
+	NVGcolor tint;
 	float xform[6];
 	NVGscissor scissor;
 	float fontSize;
@@ -651,7 +651,7 @@ void nvgReset(NVGcontext* ctx)
 	state->miterLimit = 10.0f;
 	state->lineCap = NVG_BUTT;
 	state->lineJoin = NVG_MITER;
-	state->alpha = 1.0f;
+	state->tint = nvgRGBAf(1, 1, 1, 1);
 	nvgTransformIdentity(state->xform);
 
 	state->scissor.extent[0] = -1.0f;
@@ -698,8 +698,13 @@ void nvgLineJoin(NVGcontext* ctx, int join)
 
 void nvgGlobalAlpha(NVGcontext* ctx, float alpha)
 {
+	nvgGlobalTint(ctx, nvgRGBAf(1, 1, 1, alpha));
+}
+
+void nvgGlobalTint(NVGcontext* ctx, NVGcolor tint)
+{
 	NVGstate* state = nvg__getState(ctx);
-	state->alpha = alpha;
+	state->tint = tint;
 }
 
 void nvgTransform(NVGcontext* ctx, float a, float b, float c, float d, float e, float f)
@@ -2229,9 +2234,11 @@ void nvgFill(NVGcontext* ctx)
 	else
 		nvg__expandFill(ctx, 0.0f, NVG_MITER, 2.4f);
 
-	// Apply global alpha
-	fillPaint.innerColor.a *= state->alpha;
-	fillPaint.outerColor.a *= state->alpha;
+	// Apply global tint
+	for (i = 0; i < 4; i++) {
+		fillPaint.innerColor.rgba[i] *= state->tint.rgba[i];
+		fillPaint.outerColor.rgba[i] *= state->tint.rgba[i];
+	}
 
 	ctx->params.renderFill(ctx->params.userPtr, &fillPaint, state->compositeOperation, &state->scissor, ctx->fringeWidth,
 						   ctx->cache->bounds, ctx->cache->paths, ctx->cache->npaths);
@@ -2264,9 +2271,11 @@ void nvgStroke(NVGcontext* ctx)
 		strokeWidth = ctx->fringeWidth;
 	}
 
-	// Apply global alpha
-	strokePaint.innerColor.a *= state->alpha;
-	strokePaint.outerColor.a *= state->alpha;
+	// Apply global tint
+	for (i = 0; i < 4; i++) {
+		strokePaint.innerColor.rgba[i] *= state->tint.rgba[i];
+		strokePaint.outerColor.rgba[i] *= state->tint.rgba[i];
+	}
 
 	nvg__flattenPaths(ctx);
 
@@ -2413,15 +2422,18 @@ static int nvg__allocTextAtlas(NVGcontext* ctx)
 
 static void nvg__renderText(NVGcontext* ctx, NVGvertex* verts, int nverts)
 {
+	int i;
 	NVGstate* state = nvg__getState(ctx);
 	NVGpaint paint = state->fill;
 
 	// Render triangles.
 	paint.image = ctx->fontImages[ctx->fontImageIdx];
 
-	// Apply global alpha
-	paint.innerColor.a *= state->alpha;
-	paint.outerColor.a *= state->alpha;
+	// Apply global tint
+	for (i = 0; i < 4; i++) {
+		paint.innerColor.rgba[i] *= state->tint.rgba[i];
+		paint.outerColor.rgba[i] *= state->tint.rgba[i];
+	}
 
 	ctx->params.renderTriangles(ctx->params.userPtr, &paint, state->compositeOperation, &state->scissor, verts, nverts);
 
