@@ -272,6 +272,7 @@ void nvgLineJoin(NVGcontext* ctx, int join);
 // Already transparent paths will get proportionally more transparent as well.
 void nvgGlobalAlpha(NVGcontext* ctx, float alpha);
 void nvgGlobalTint(NVGcontext* ctx, NVGcolor tint);
+NVGcolor nvgGetGlobalTint(NVGcontext* ctx);
 
 //
 // Transforms

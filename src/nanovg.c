@@ -710,6 +710,12 @@ void nvgGlobalTint(NVGcontext* ctx, NVGcolor tint)
 	state->tint = tint;
 }
 
+NVGcolor nvgGetGlobalTint(NVGcontext* ctx)
+{
+	NVGstate* state = nvg__getState(ctx);
+	return state->tint;
+}
+
 void nvgTransform(NVGcontext* ctx, float a, float b, float c, float d, float e, float f)
 {
 	NVGstate* state = nvg__getState(ctx);
