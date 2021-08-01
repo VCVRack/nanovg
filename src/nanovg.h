@@ -273,6 +273,8 @@ void nvgLineJoin(NVGcontext* ctx, int join);
 void nvgGlobalAlpha(NVGcontext* ctx, float alpha);
 void nvgGlobalTint(NVGcontext* ctx, NVGcolor tint);
 NVGcolor nvgGetGlobalTint(NVGcontext* ctx);
+void nvgAlpha(NVGcontext* ctx, float alpha);
+void nvgTint(NVGcontext* ctx, NVGcolor tint);
 
 //
 // Transforms
