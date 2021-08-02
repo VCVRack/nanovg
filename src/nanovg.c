@@ -736,6 +736,20 @@ NVGcolor nvgGetGlobalTint(NVGcontext* ctx)
 	return state->tint;
 }
 
+void nvgAlpha(NVGcontext* ctx, float alpha)
+{
+	NVGstate* state = nvg__getState(ctx);
+	state->tint.a *= alpha;
+}
+
+void nvgTint(NVGcontext* ctx, NVGcolor tint)
+{
+	NVGstate* state = nvg__getState(ctx);
+	int i;
+	for (i = 0; i < 4; i++)
+		state->tint.rgba[i] *= tint.rgba[i];
+}
+
 void nvgTransform(NVGcontext* ctx, float a, float b, float c, float d, float e, float f)
 {
 	NVGstate* state = nvg__getState(ctx);
