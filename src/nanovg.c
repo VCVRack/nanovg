@@ -28,7 +28,7 @@
 #ifndef NVG_NO_STB
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#endif 
+#endif
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4100)  // unreferenced formal parameter
@@ -45,7 +45,10 @@
 #define NVG_INIT_POINTS_SIZE 128
 #define NVG_INIT_PATHS_SIZE 16
 #define NVG_INIT_VERTS_SIZE 256
+
+#ifndef NVG_MAX_STATES
 #define NVG_MAX_STATES 32
+#endif
 
 #define NVG_KAPPA90 0.5522847493f	// Length proportional to radius of a cubic bezier handle for 90deg arcs.
 
@@ -416,6 +419,7 @@ void nvgEndFrame(NVGcontext* ctx)
 	ctx->params.renderFlush(ctx->params.userPtr);
 	if (ctx->fontContext->fontImageIdx != 0) {
 		int fontImage = ctx->fontContext->fontImages[ctx->fontContext->fontImageIdx];
+		ctx->fontContext->fontImages[ctx->fontContext->fontImageIdx] = 0;
 		int i, j, iw, ih;
 		// delete images that smaller than current one
 		if (fontImage == 0)
@@ -424,20 +428,19 @@ void nvgEndFrame(NVGcontext* ctx)
 		for (i = j = 0; i < ctx->fontContext->fontImageIdx; i++) {
 			if (ctx->fontContext->fontImages[i] != 0) {
 				int nw, nh;
-				nvgImageSize(ctx, ctx->fontContext->fontImages[i], &nw, &nh);
+				int image = ctx->fontContext->fontImages[i];
+				ctx->fontContext->fontImages[i] = 0;
+				nvgImageSize(ctx, image, &nw, &nh);
 				if (nw < iw || nh < ih)
-					nvgDeleteImage(ctx, ctx->fontContext->fontImages[i]);
+					nvgDeleteImage(ctx, image);
 				else
-					ctx->fontContext->fontImages[j++] = ctx->fontContext->fontImages[i];
+					ctx->fontContext->fontImages[j++] = image;
 			}
 		}
 		// make current font image to first
-		ctx->fontContext->fontImages[j++] = ctx->fontContext->fontImages[0];
+		ctx->fontContext->fontImages[j] = ctx->fontContext->fontImages[0];
 		ctx->fontContext->fontImages[0] = fontImage;
 		ctx->fontContext->fontImageIdx = 0;
-		// clear all images after j
-		for (i = j; i < NVG_MAX_FONTIMAGES; i++)
-			ctx->fontContext->fontImages[i] = 0;
 	}
 }
 
@@ -857,6 +860,8 @@ int nvgCreateImage(NVGcontext* ctx, const char* filename, int imageFlags)
 int nvgCreateImageMem(NVGcontext* ctx, int imageFlags, unsigned char* data, int ndata)
 {
 	int w, h, n, image;
+	stbi_set_unpremultiply_on_load(1);
+	stbi_convert_iphone_png_to_rgb(1);
 	unsigned char* img = stbi_load_from_memory(data, ndata, &w, &h, &n, 4);
 	if (img == NULL) {
 //		printf("Failed to load %s - %s\n", filename, stbi_failure_reason());
@@ -2593,7 +2598,7 @@ void nvgTextBox(NVGcontext* ctx, float x, float y, float breakRowWidth, const ch
 	NVGtextRow rows[2];
 	int nrows = 0, i;
 	int oldAlign = state->textAlign;
-	int haling = state->textAlign & (NVG_ALIGN_LEFT | NVG_ALIGN_CENTER | NVG_ALIGN_RIGHT);
+	int halign = state->textAlign & (NVG_ALIGN_LEFT | NVG_ALIGN_CENTER | NVG_ALIGN_RIGHT);
 	int valign = state->textAlign & (NVG_ALIGN_TOP | NVG_ALIGN_MIDDLE | NVG_ALIGN_BOTTOM | NVG_ALIGN_BASELINE);
 	float lineh = 0;
 
@@ -2606,11 +2611,11 @@ void nvgTextBox(NVGcontext* ctx, float x, float y, float breakRowWidth, const ch
 	while ((nrows = nvgTextBreakLines(ctx, string, end, breakRowWidth, rows, 2))) {
 		for (i = 0; i < nrows; i++) {
 			NVGtextRow* row = &rows[i];
-			if (haling & NVG_ALIGN_LEFT)
+			if (halign & NVG_ALIGN_LEFT)
 				nvgText(ctx, x, y, row->start, row->end);
-			else if (haling & NVG_ALIGN_CENTER)
+			else if (halign & NVG_ALIGN_CENTER)
 				nvgText(ctx, x + breakRowWidth*0.5f - row->width*0.5f, y, row->start, row->end);
-			else if (haling & NVG_ALIGN_RIGHT)
+			else if (halign & NVG_ALIGN_RIGHT)
 				nvgText(ctx, x + breakRowWidth - row->width, y, row->start, row->end);
 			y += lineh * state->lineHeight;
 		}
@@ -2912,7 +2917,7 @@ void nvgTextBoxBounds(NVGcontext* ctx, float x, float y, float breakRowWidth, co
 	float invscale = 1.0f / scale;
 	int nrows = 0, i;
 	int oldAlign = state->textAlign;
-	int haling = state->textAlign & (NVG_ALIGN_LEFT | NVG_ALIGN_CENTER | NVG_ALIGN_RIGHT);
+	int halign = state->textAlign & (NVG_ALIGN_LEFT | NVG_ALIGN_CENTER | NVG_ALIGN_RIGHT);
 	int valign = state->textAlign & (NVG_ALIGN_TOP | NVG_ALIGN_MIDDLE | NVG_ALIGN_BOTTOM | NVG_ALIGN_BASELINE);
 	float lineh = 0, rminy = 0, rmaxy = 0;
 	float minx, miny, maxx, maxy;
@@ -2944,11 +2949,11 @@ void nvgTextBoxBounds(NVGcontext* ctx, float x, float y, float breakRowWidth, co
 			NVGtextRow* row = &rows[i];
 			float rminx, rmaxx, dx = 0;
 			// Horizontal bounds
-			if (haling & NVG_ALIGN_LEFT)
+			if (halign & NVG_ALIGN_LEFT)
 				dx = 0;
-			else if (haling & NVG_ALIGN_CENTER)
+			else if (halign & NVG_ALIGN_CENTER)
 				dx = breakRowWidth*0.5f - row->width*0.5f;
-			else if (haling & NVG_ALIGN_RIGHT)
+			else if (halign & NVG_ALIGN_RIGHT)
 				dx = breakRowWidth - row->width;
 			rminx = x + row->minx + dx;
 			rmaxx = x + row->maxx + dx;
