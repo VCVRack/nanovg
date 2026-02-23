@@ -336,7 +336,7 @@ void fons__tt_getFontVMetrics(FONSttFontImpl *font, int *ascent, int *descent, i
 
 float fons__tt_getPixelHeightScale(FONSttFontImpl *font, float size)
 {
-	return size / font->font->units_per_EM;
+	return size / (font->font->ascender - font->font->descender);
 }
 
 int fons__tt_getGlyphIndex(FONSttFontImpl *font, int codepoint)
@@ -352,7 +352,7 @@ int fons__tt_buildGlyphBitmap(FONSttFontImpl *font, int glyph, float size, float
 	FT_Fixed advFixed;
 	FONS_NOTUSED(scale);
 
-	ftError = FT_Set_Pixel_Sizes(font->font, 0, size);
+	ftError = FT_Set_Pixel_Sizes(font->font, 0, (FT_UInt)(size * (float)font->font->units_per_EM / (float)(font->font->ascender - font->font->descender)));
 	if (ftError) return 0;
 	ftError = FT_Load_Glyph(font->font, glyph, FT_LOAD_RENDER | FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT);
 	if (ftError) return 0;
@@ -430,7 +430,7 @@ void fons__tt_getFontVMetrics(FONSttFontImpl *font, int *ascent, int *descent, i
 
 float fons__tt_getPixelHeightScale(FONSttFontImpl *font, float size)
 {
-	return stbtt_ScaleForMappingEmToPixels(&font->font, size);
+	return stbtt_ScaleForPixelHeight(&font->font, size);
 }
 
 int fons__tt_getGlyphIndex(FONSttFontImpl *font, int codepoint)
